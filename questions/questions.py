@@ -1,18 +1,29 @@
+
+  
+import streamlit as st
 import nltk
 import sys
 import os
 import string
+
 FILE_MATCHES = 1
 SENTENCE_MATCHES = 1
 import math
 
 
+FILE_MATCHES = 1
+SENTENCE_MATCHES = 1
+nltk.download('stopwords')
+
+
 def main():
-
-    # Check command-line arguments
-    if len(sys.argv) != 2:
-        sys.exit("Usage: python questions.py corpus")
-
+    html_1="""
+    <div style="background-color:Cyan;padding:10px">
+    <h2 style="color:white;text-align:center;">Questions app</h2>
+    </div>"""
+    st.text("Enter Queries related Machine learning and Artificial Intelligence Only")
+    st.markdown(html_1,unsafe_allow_html=True)
+    # Check command-line argument
     # Calculate IDF values across files
     files = load_files(sys.argv[1])
     file_words = {
@@ -22,8 +33,8 @@ def main():
     file_idfs = compute_idfs(file_words)
 
     # Prompt user for query
-    query = set(tokenize(input("Query: ")))
-
+    query = set(tokenize(st.text_input("Query: ")))
+  
     # Determine top file matches according to TF-IDF
     filenames = top_files(query, file_words, file_idfs, n=FILE_MATCHES)
 
@@ -42,23 +53,21 @@ def main():
     # Determine top sentence matches
     matches = top_sentences(query, sentences, idfs, n=SENTENCE_MATCHES)
     for match in matches:
-        print(match)
+        st.success(match)
 
 
 def load_files(directory):
-
     print("loading data......")
 
-    files={}
+    files = {}
     for filename in os.listdir(directory):
         if filename.endswith('.txt'):
-            file_path=os.path.join(directory, filename)
+            file_path = os.path.join(directory, filename)
             with open(file_path, 'r', encoding="utf8") as file:
-                content=file.read()
-            files[filename]=content
+                content = file.read()
+            files[filename] = content
 
     return files
-
     """
     Given a directory name, return a dictionary mapping the filename of each
     `.txt` file inside that directory to the file's contents as a string.
@@ -67,10 +76,10 @@ def load_files(directory):
 
 
 def tokenize(document):
+    words_tokens = nltk.word_tokenize(document)
 
-    words_tokens=nltk.word_tokenize(document)
-
-    refined_words_tokens=[word.lower() for word in words_tokens if word not in string.punctuation and word not in nltk.corpus.stopwords.words("english")]
+    refined_words_tokens = [word.lower() for word in words_tokens if
+                            word not in string.punctuation and word not in nltk.corpus.stopwords.words("english")]
 
     return refined_words_tokens
     """
@@ -83,26 +92,23 @@ def tokenize(document):
 
 
 def compute_idfs(documents):
-
-    idf={}
-    total_documents=len(documents)
+    idf = {}
+    total_documents = len(documents)
     for titles in documents:
 
         for word in documents[titles]:
             if word in idf:
                 continue
-            word_frequency=1
+            word_frequency = 1
             for other_titles in documents:
-                if titles==other_titles:
+                if titles == other_titles:
                     continue
                 else:
                     if word in documents[other_titles]:
-                        word_frequency+=1
-            idf[word]=math.log(total_documents/word_frequency)
+                        word_frequency += 1
+            idf[word] = math.log(total_documents / word_frequency)
 
     return idf
-
-
     """
     Given a dictionary of `documents` that maps names of documents to a list
     of words, return a dictionary that maps words to their IDF values.
@@ -113,18 +119,15 @@ def compute_idfs(documents):
 
 
 def top_files(query, files, idfs, n):
-
-    tf_idf_scores={file_names:0 for file_names in files}
+    tf_idf_scores = {file_names: 0 for file_names in files}
     for file_name in files:
         for word in query:
             if word in files[file_name]:
-                tf=files[file_name].count(word)
-                idf=idfs[word]
-                tf_idf_scores[file_name] += tf*idf
+                tf = files[file_name].count(word)
+                idf = idfs[word]
+                tf_idf_scores[file_name] += tf * idf
 
-    return sorted([file for file in files], key=lambda x:tf_idf_scores[x], reverse=True)
-
-
+    return sorted([file for file in files], key=lambda x: tf_idf_scores[x], reverse=True)
     """
     Given a `query` (a set of words), `files` (a dictionary mapping names of
     files to a list of their words), and `idfs` (a dictionary mapping words
@@ -135,24 +138,22 @@ def top_files(query, files, idfs, n):
 
 
 def top_sentences(query, sentences, idfs, n):
-    top_sentence_score={sentence:[0,0] for sentence in sentences}
+    top_sentence_score = {sentence: [0, 0] for sentence in sentences}
     for sentence in sentences:
 
         for words in query:
             if words in sentences[sentence]:
-                top_sentence_score[sentence][0]+=idfs[words]
-        query_term_density=0
+                top_sentence_score[sentence][0] += idfs[words]
+        query_term_density = 0
         for word in sentences[sentence]:
             if word in query:
-                query_term_density+=1
-        top_sentence_score[sentence][1]=query_term_density/len(sentences[sentence])
+                query_term_density += 1
+        top_sentence_score[sentence][1] = query_term_density / len(sentences[sentence])
 
-    sorted_top_sentence_score = {sentence: values for sentence, values in sorted(top_sentence_score.items(), key=lambda x: (x[1][0], x[1][1]), reverse=True)}
+    sorted_top_sentence_score = {sentence: values for sentence, values in
+                                 sorted(top_sentence_score.items(), key=lambda x: (x[1][0], x[1][1]), reverse=True)}
 
     return list(sorted_top_sentence_score.keys())[:n]
-
-
-
     """
     Given a `query` (a set of words), `sentences` (a dictionary mapping
     sentences to a list of their words), and `idfs` (a dictionary mapping words
@@ -165,3 +166,4 @@ def top_sentences(query, sentences, idfs, n):
 
 if __name__ == "__main__":
     main()
+
